@@ -31,14 +31,15 @@ export const RecordingPanel: React.FC = () => {
     playbackMode,
     activeRecording,
     playbackState,
+    storageError,
     startRecording,
     stopRecording,
+    discardRecording,
     deleteRecording,
     enterPlaybackMode,
     exitPlaybackMode,
     setPlaybackTime,
     togglePlayback,
-    setPlaybackPlaying,
     selectedChannel,
   } = useEEGStore();
 
@@ -46,7 +47,6 @@ export const RecordingPanel: React.FC = () => {
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<number | null>(null);
-  const playbackTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isRecording) {
@@ -65,30 +65,6 @@ export const RecordingPanel: React.FC = () => {
     };
   }, [isRecording, currentRecordingFrames.length]);
 
-  useEffect(() => {
-    if (playbackState.isPlaying && activeRecording) {
-      playbackTimerRef.current = window.setInterval(() => {
-        const { playbackState, activeRecording, setPlaybackTime, setPlaybackPlaying } = useEEGStore.getState();
-        if (!activeRecording) return;
-        const newTime = playbackState.currentTime + 0.1;
-        if (newTime >= activeRecording.duration) {
-          setPlaybackTime(activeRecording.duration);
-          setPlaybackPlaying(false);
-        } else {
-          setPlaybackTime(newTime);
-        }
-      }, 100);
-    } else {
-      if (playbackTimerRef.current) {
-        clearInterval(playbackTimerRef.current);
-        playbackTimerRef.current = null;
-      }
-    }
-    return () => {
-      if (playbackTimerRef.current) clearInterval(playbackTimerRef.current);
-    };
-  }, [playbackState.isPlaying, activeRecording]);
-
   const handleStartRecording = () => {
     startRecording();
   };
@@ -104,11 +80,7 @@ export const RecordingPanel: React.FC = () => {
   };
 
   const handleCancelSave = () => {
-    useEEGStore.setState({
-      isRecording: false,
-      recordingStartTime: 0,
-      currentRecordingFrames: [],
-    });
+    discardRecording();
     setShowNameDialog(false);
     setRecordingName('');
   };
@@ -137,6 +109,20 @@ export const RecordingPanel: React.FC = () => {
         <span style={{ fontSize: '20px' }}>⏺</span>
         录制与回放
       </h3>
+
+      {storageError && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '10px 12px',
+          background: '#fff3e0',
+          border: '1px solid #ffb74d',
+          borderRadius: '8px',
+          fontSize: '12px',
+          color: '#e65100',
+        }}>
+          ⚠ {storageError}
+        </div>
+      )}
 
       {!playbackMode && (
         <div style={{ marginBottom: '16px' }}>
