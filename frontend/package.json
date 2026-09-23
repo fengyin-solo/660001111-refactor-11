@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build"
+    "build": "tsc -b && vite build",
+    "pretest": "tsc test/eeg-store.test.ts --outDir dist-test --module commonjs --target ES2020 --moduleResolution node --esModuleInterop --skipLibCheck --strict && node -e \"require('fs').writeFileSync('dist-test/package.json','{\\\"type\\\":\\\"commonjs\\\"}')\" && mv dist-test/test/eeg-store.test.js dist-test/test/eeg-store.test.cjs",
+    "test": "node --test dist-test/test/",
+    "posttest": "rm -rf dist-test"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -33,12 +33,13 @@ export const RecordingPanel: React.FC = () => {
     playbackState,
     startRecording,
     stopRecording,
+    discardRecording,
     deleteRecording,
     enterPlaybackMode,
     exitPlaybackMode,
     setPlaybackTime,
+    tickPlayback,
     togglePlayback,
-    setPlaybackPlaying,
     selectedChannel,
   } = useEEGStore();
 
@@ -67,16 +68,9 @@ export const RecordingPanel: React.FC = () => {
 
   useEffect(() => {
     if (playbackState.isPlaying && activeRecording) {
+      // 每拍推进规则（含到结尾自动暂停）统一由 store 的 tickPlayback 处理
       playbackTimerRef.current = window.setInterval(() => {
-        const { playbackState, activeRecording, setPlaybackTime, setPlaybackPlaying } = useEEGStore.getState();
-        if (!activeRecording) return;
-        const newTime = playbackState.currentTime + 0.1;
-        if (newTime >= activeRecording.duration) {
-          setPlaybackTime(activeRecording.duration);
-          setPlaybackPlaying(false);
-        } else {
-          setPlaybackTime(newTime);
-        }
+        tickPlayback(0.1);
       }, 100);
     } else {
       if (playbackTimerRef.current) {
@@ -87,7 +81,7 @@ export const RecordingPanel: React.FC = () => {
     return () => {
       if (playbackTimerRef.current) clearInterval(playbackTimerRef.current);
     };
-  }, [playbackState.isPlaying, activeRecording]);
+  }, [playbackState.isPlaying, activeRecording, tickPlayback]);
 
   const handleStartRecording = () => {
     startRecording();
@@ -104,11 +98,7 @@ export const RecordingPanel: React.FC = () => {
   };
 
   const handleCancelSave = () => {
-    useEEGStore.setState({
-      isRecording: false,
-      recordingStartTime: 0,
-      currentRecordingFrames: [],
-    });
+    discardRecording();
     setShowNameDialog(false);
     setRecordingName('');
   };
